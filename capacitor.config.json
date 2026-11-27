@@ -1,0 +1,13 @@
+{
+  "appId": "com.solarngocgiau.pro",
+  "appName": "Solar Ngọc Giàu PRO",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

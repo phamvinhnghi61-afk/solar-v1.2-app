@@ -1,0 +1,86 @@
+name: Build Solar Ngoc Giau PRO APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Capacitor dependencies
+        run: npm install
+
+      - name: Add Android platform & sync web assets
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Enable Wi-Fi, Bluetooth & Notification Permissions in AndroidManifest
+        run: |
+          python3 - << 'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p).read()
+          perms = '''    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+              <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+              <uses-permission android:name="android.permission.BLUETOOTH" />
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="android.permission.VIBRATE" />'''
+          if 'POST_NOTIFICATIONS' not in s:
+              s = s.replace('<application', perms + '\n    <application', 1)
+              open(p, 'w').write(s)
+          PY
+
+      - name: Add Google Maven Central Mirror (Avoid 429 Rate Limit)
+        run: |
+          python3 - << 'PY'
+          p = 'android/build.gradle'
+          s = open(p).read()
+          mirror = "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()"
+          if 'maven-central.storage-download.googleapis.com' not in s:
+              s = s.replace('mavenCentral()', mirror)
+              open(p, 'w').write(s)
+          PY
+
+      - name: Apply Solar Ngoc Giau App Launcher Icon
+        run: |
+          for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            if [ -d "android/app/src/main/res/$dir" ]; then
+              cp www/icon-192.png "android/app/src/main/res/$dir/ic_launcher.png"
+              cp www/icon-192.png "android/app/src/main/res/$dir/ic_launcher_round.png"
+              cp www/icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
+            fi
+          done
+
+      - name: Build Debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --max-workers=2 || ./gradlew assembleDebug --no-daemon --max-workers=2
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Solar-Ngoc-Giau-PRO-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

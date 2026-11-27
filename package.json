@@ -1,0 +1,14 @@
+{
+  "name": "solar-ngoc-giau-pro",
+  "version": "3.2.3",
+  "description": "App bán hàng Solar Ngọc Giàu PRO",
+  "private": true,
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
